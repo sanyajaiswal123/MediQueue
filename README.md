@@ -1,19 +1,19 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&height=220&color=0:0b1220,55:0f766e,100:2dd4bf&text=MediQueue&fontColor=ffffff&fontSize=64&fontAlignY=38&desc=Hospital%20OPD%20queues%20%C2%B7%20ward%20beds%20%C2%B7%20pharmacy%20%C2%B7%20a%20live%20city%20dashboard&descAlignY=60&descSize=18&animation=fadeIn" alt="MediQueue banner" />
+<img src="https://capsule-render.vercel.app/api?type=waving&height=220&color=0:121110,55:7a231d,100:c8372d&text=MediQueue&fontColor=f1ede7&fontSize=64&fontAlignY=38&desc=Hospital%20OPD%20queues%20%C2%B7%20ward%20beds%20%C2%B7%20pharmacy%20%C2%B7%20a%20live%20city%20dashboard&descAlignY=60&descSize=18&animation=fadeIn" alt="MediQueue banner" />
 
-<a href="https://git.io/typing-svg"><img src="https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=20&pause=1200&color=2DD4BF&center=true&vCenter=true&width=640&lines=Book+a+token.+Watch+your+place+in+line.;Allocate+beds+without+double-booking.;Dispense+medicine+without+going+negative.;One+public+dashboard.+Zero+patient+data." alt="Typing animation" /></a>
+<a href="https://git.io/typing-svg"><img src="https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=20&pause=1200&color=F0766A&center=true&vCenter=true&width=640&lines=Book+a+token.+Watch+your+place+in+line.;Allocate+beds+without+double-booking.;Dispense+medicine+without+going+negative.;One+public+dashboard.+Zero+patient+data." alt="Typing animation" /></a>
 
 <br/>
 
 ![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)
 ![Django](https://img.shields.io/badge/Django-5.2_LTS-092E20?logo=django&logoColor=white)
-![DRF](https://img.shields.io/badge/DRF-3.18-A30000)
+![DRF](https://img.shields.io/badge/DRF-3.18-c8372d)
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
-![Tailwind](https://img.shields.io/badge/Tailwind-v4-06B6D4?logo=tailwindcss&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind-v4-3b6fe0?logo=tailwindcss&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
 ![GSAP](https://img.shields.io/badge/GSAP-motion-88CE02?logo=greensock&logoColor=black)
-![Tests](https://img.shields.io/badge/tests-100_passing-16a34a)
+![Tests](https://img.shields.io/badge/tests-100_passing-2f7d4f)
 
 </div>
 
@@ -181,6 +181,6 @@ templates/   Django templates
 
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&height=100&color=0:2dd4bf,50:0f766e,100:0b1220&section=footer" alt="" />
+<img src="https://capsule-render.vercel.app/api?type=waving&height=100&color=0:c8372d,50:7a231d,100:121110&section=footer" alt="" />
 
 </div>
