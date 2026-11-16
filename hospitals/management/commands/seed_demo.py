@@ -1,4 +1,5 @@
 """Seed demo data: hospitals, departments, doctors, receptionists, pharmacists. Idempotent."""
+import os
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -12,7 +13,11 @@ from pharmacy.models import Medicine
 from wards.models import Bed, Ward
 
 User = get_user_model()
+# The patient login is public on purpose. Staff and admin passwords come from the environment on a public host,
+# so strangers cannot sign in as staff (locally they default to 'demo').
 DEMO_PASSWORD = 'demo'
+STAFF_PASSWORD = os.environ.get('DEMO_STAFF_PASSWORD') or DEMO_PASSWORD
+ADMIN_PASSWORD = os.environ.get('DEMO_ADMIN_PASSWORD') or DEMO_PASSWORD
 
 # Short logins for the main demo hospital (City Care); the other hospitals keep long, unambiguous names.
 SHORT_LOGINS = {'reception_citycare': 'reception', 'pharmacist_citycare': 'pharmacist',
@@ -74,7 +79,7 @@ class Command(BaseCommand):
         self._demo_patient_and_admin(Hospital.objects.get(name=HOSPITALS[0]['name']))
         self.stdout.write(self.style.SUCCESS(
             f'Seed done: {Hospital.objects.count()} hospitals, {Department.objects.count()} departments, '
-            f'{Doctor.objects.count()} doctors, {Bed.objects.count()} beds. Every demo password: {DEMO_PASSWORD}'))
+            f'{Doctor.objects.count()} doctors, {Bed.objects.count()} beds. Patient password: {DEMO_PASSWORD}. Staff/admin: {"custom (env)" if STAFF_PASSWORD != DEMO_PASSWORD else DEMO_PASSWORD}.'))
         if options.get('activity'):
             self._activity()
 
@@ -185,7 +190,7 @@ class Command(BaseCommand):
         patient.save()
         admin, _ = User.objects.get_or_create(username='admin', defaults={'first_name': 'Demo', 'last_name': 'Admin'})
         admin.is_staff = admin.is_superuser = True
-        admin.set_password(DEMO_PASSWORD)
+        admin.set_password(ADMIN_PASSWORD)
         admin.save()
         profile = admin.profile
         profile.role, profile.hospital = Profile.Role.ADMIN, hospital
@@ -195,7 +200,7 @@ class Command(BaseCommand):
         """Get or create a staff user with the given role and hospital (password reset to the demo one)."""
         user, _ = User.objects.get_or_create(
             username=username, defaults={'first_name': first, 'last_name': last})
-        user.set_password(DEMO_PASSWORD)
+        user.set_password(STAFF_PASSWORD)
         user.save()
         profile = user.profile
         profile.role, profile.hospital = role, hospital

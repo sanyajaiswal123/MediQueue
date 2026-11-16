@@ -147,3 +147,14 @@ class AuthPagesTests(TestCase):
         User.objects.create_user('pat2', password='pw12345')
         resp = self.client.post(reverse('accounts:login'), {'username': 'pat2', 'password': 'pw12345'})
         self.assertRedirects(resp, reverse('home'), fetch_redirect_response=False)
+
+
+class DemoLockTests(TestCase):
+    def test_locked_demo_user_cannot_change_password(self):
+        from django.contrib.auth.models import User
+        from django.test import override_settings
+        User.objects.create_user('patient', password='demo')
+        self.client.login(username='patient', password='demo')
+        with override_settings(DEMO_LOCKED_USERS=['patient']):
+            self.assertEqual(self.client.get('/accounts/password/').status_code, 403)
+        self.assertEqual(self.client.get('/accounts/password/').status_code, 200)

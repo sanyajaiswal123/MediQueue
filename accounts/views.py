@@ -1,11 +1,21 @@
 from django.conf import settings
 from django.contrib.auth import login
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, PasswordChangeView
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
 from .forms import PatientRegistrationForm
 from .models import Profile
+
+
+class GuardedPasswordChangeView(PasswordChangeView):
+    """Password change that refuses shared demo accounts (settings.DEMO_LOCKED_USERS), so visitors cannot lock others out."""
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and request.user.username in settings.DEMO_LOCKED_USERS:
+            raise PermissionDenied('The shared demo account password cannot be changed.')
+        return super().dispatch(request, *args, **kwargs)
 
 
 def register(request):

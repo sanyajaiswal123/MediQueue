@@ -8,7 +8,7 @@ urlpatterns = [
     path('register/', views.register, name='register'),
     path('login/', views.RoleLoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
-    path('password/', auth_views.PasswordChangeView.as_view(
+    path('password/', views.GuardedPasswordChangeView.as_view(
         template_name='registration/password_change.html', success_url=reverse_lazy('accounts:password_done')),
          name='password_change'),
     path('password/done/', auth_views.PasswordChangeDoneView.as_view(

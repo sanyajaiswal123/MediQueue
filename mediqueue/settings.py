@@ -31,6 +31,8 @@ ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').sp
 _render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if _render_host:
     ALLOWED_HOSTS.append(_render_host)
+# Comma-separated usernames of shared demo accounts whose password may not be changed (set on the public host).
+DEMO_LOCKED_USERS = [u for u in os.environ.get('DEMO_LOCKED_USERS', '').split(',') if u]
 CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get('DJANGO_CSRF_ORIGINS', '').split(',') if o]
 if _render_host:
     CSRF_TRUSTED_ORIGINS.append(f'https://{_render_host}')

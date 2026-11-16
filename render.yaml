@@ -12,5 +12,11 @@ services:
         value: "0"
       - key: DJANGO_SECRET_KEY
         generateValue: true
+      - key: DEMO_STAFF_PASSWORD
+        generateValue: true
+      - key: DEMO_ADMIN_PASSWORD
+        generateValue: true
+      - key: DEMO_LOCKED_USERS
+        value: patient
       - key: DJANGO_ALLOWED_HOSTS
         value: .onrender.com
