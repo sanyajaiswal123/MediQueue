@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&height=220&color=0:0f766e,100:2563eb&text=MediQueue&fontColor=ffffff&fontSize=64&fontAlignY=38&desc=Hospital%20OPD%20queues%20%C2%B7%20ward%20beds%20%C2%B7%20pharmacy%20%C2%B7%20a%20live%20city%20dashboard&descAlignY=60&descSize=18&animation=fadeIn" alt="MediQueue banner" />
+<img src="https://capsule-render.vercel.app/api?type=waving&height=220&color=0:0b1220,55:0f766e,100:2dd4bf&text=MediQueue&fontColor=ffffff&fontSize=64&fontAlignY=38&desc=Hospital%20OPD%20queues%20%C2%B7%20ward%20beds%20%C2%B7%20pharmacy%20%C2%B7%20a%20live%20city%20dashboard&descAlignY=60&descSize=18&animation=fadeIn" alt="MediQueue banner" />
 
-<a href="https://git.io/typing-svg"><img src="https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=20&pause=1200&color=0F766E&center=true&vCenter=true&width=640&lines=Book+a+token.+Watch+your+place+in+line.;Allocate+beds+without+double-booking.;Dispense+medicine+without+going+negative.;One+public+dashboard.+Zero+patient+data." alt="Typing animation" /></a>
+<a href="https://git.io/typing-svg"><img src="https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=20&pause=1200&color=2DD4BF&center=true&vCenter=true&width=640&lines=Book+a+token.+Watch+your+place+in+line.;Allocate+beds+without+double-booking.;Dispense+medicine+without+going+negative.;One+public+dashboard.+Zero+patient+data." alt="Typing animation" /></a>
 
 <br/>
 
@@ -45,101 +45,25 @@ Built for the INT253 (Django) CA3 project. Django does the heavy lifting; the pa
 
 ---
 
-## How a patient token moves
-
-```mermaid
-stateDiagram-v2
-    direction LR
-    [*] --> WAITING: book token
-    WAITING --> CALLED: doctor calls next
-    WAITING --> CANCELLED: patient cancels
-    CALLED --> IN_CONSULT: consultation starts
-    CALLED --> CALLED: recall (up to 3 calls)
-    CALLED --> NO_SHOW: 3rd unanswered call
-    IN_CONSULT --> COMPLETED: prescription issued
-    COMPLETED --> [*]
-    NO_SHOW --> [*]
-    CANCELLED --> [*]
-```
-
-## How a bed moves
-
-```mermaid
-stateDiagram-v2
-    direction LR
-    [*] --> AVAILABLE
-    AVAILABLE --> OCCUPIED: admit patient
-    OCCUPIED --> CLEANING: discharge
-    CLEANING --> AVAILABLE: marked clean
-    CLEANING --> OCCUPIED: next waiting patient auto-allocated
-```
-
----
-
 ## Architecture
 
-```mermaid
-flowchart LR
-    subgraph Browser
-        T[Server-rendered pages<br/>Django templates + Tailwind]
-        R[React widgets<br/>Ticket tracker · City dashboard]
-    end
+<p align="center">
+  <img src="assets/architecture.svg" alt="MediQueue architecture: clients, pages, views and REST API, services.py, app domains, database and guards" width="100%" />
+</p>
 
-    subgraph Django["Django 5.2"]
-        V[Thin views & DRF serializers]
-        S[services.py<br/>business rules · atomic transactions]
-        M[(Models)]
-    end
+Views stay thin. Every business rule lives in an app's `services.py`, runs inside `transaction.atomic` where it touches shared state, and is unit-tested.
 
-    T --> V
-    R -->|JSON| V
-    V --> S --> M
-    M --- DB[(SQLite / any SQL DB)]
+## Lifecycles
 
-    classDef core fill:#0f766e,stroke:#0f766e,color:#fff
-    class S core
-```
+<p align="center">
+  <img src="assets/lifecycle.svg" alt="OPD token states and ward bed states" width="100%" />
+</p>
 
-### Apps
+## Tests
 
-```mermaid
-mindmap
-  root((MediQueue))
-    accounts
-      roles & permissions
-      login / register
-    hospitals
-      departments
-      doctors
-      seed_demo
-    opd
-      patients
-      tokens
-      queue services
-    wards
-      wards & beds
-      admissions
-      allocation
-    pharmacy
-      medicines & batches
-      prescriptions
-      dispensing
-    api
-      public aggregates
-      patient token API
-```
-
----
-
-## Test coverage by app
-
-```mermaid
-xychart-beta
-    title "100 passing tests"
-    x-axis [mediqueue, accounts, api, opd, pharmacy, wards, hospitals]
-    y-axis "Test cases" 0 --> 30
-    bar [29, 19, 15, 12, 10, 10, 5]
-```
+<p align="center">
+  <img src="assets/tests.svg" alt="100 passing tests across seven apps" width="100%" />
+</p>
 
 ```bash
 python manage.py test
@@ -257,6 +181,6 @@ templates/   Django templates
 
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&height=100&color=0:2563eb,100:0f766e&section=footer" alt="" />
+<img src="https://capsule-render.vercel.app/api?type=waving&height=100&color=0:2dd4bf,50:0f766e,100:0b1220&section=footer" alt="" />
 
 </div>
