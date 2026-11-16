@@ -1,3 +1,4 @@
+from hospitals.management.commands.seed_demo import STAFF_PASSWORD
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
@@ -49,7 +50,7 @@ class SeedDemoTests(TestCase):
 
     def test_seeded_doctor_can_log_in_with_role(self):
         call_command('seed_demo', verbosity=0)
-        self.assertTrue(self.client.login(username='doctor', password='demo'))
+        self.assertTrue(self.client.login(username='doctor', password=STAFF_PASSWORD))
         u = User.objects.get(username='doctor')
         self.assertEqual(u.profile.role, Profile.Role.DOCTOR)
         self.assertEqual(u.doctor.hospital.name, 'City Care Hospital')

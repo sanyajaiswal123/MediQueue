@@ -13,11 +13,12 @@ from pharmacy.models import Medicine
 from wards.models import Bed, Ward
 
 User = get_user_model()
-# The patient login is public on purpose. Staff and admin passwords come from the environment on a public host,
-# so strangers cannot sign in as staff (locally they default to 'demo').
+# The shared patient login is public on purpose. Staff and admin default to DEFAULT_STAFF_PASSWORD; set
+# DEMO_STAFF_PASSWORD / DEMO_ADMIN_PASSWORD in the environment to override them on a host.
 DEMO_PASSWORD = 'demo'
-STAFF_PASSWORD = os.environ.get('DEMO_STAFF_PASSWORD') or DEMO_PASSWORD
-ADMIN_PASSWORD = os.environ.get('DEMO_ADMIN_PASSWORD') or DEMO_PASSWORD
+DEFAULT_STAFF_PASSWORD = 'Sanya05'
+STAFF_PASSWORD = os.environ.get('DEMO_STAFF_PASSWORD') or DEFAULT_STAFF_PASSWORD
+ADMIN_PASSWORD = os.environ.get('DEMO_ADMIN_PASSWORD') or STAFF_PASSWORD
 
 # Short logins for the main demo hospital (City Care); the other hospitals keep long, unambiguous names.
 SHORT_LOGINS = {'reception_citycare': 'reception', 'pharmacist_citycare': 'pharmacist',
@@ -79,7 +80,7 @@ class Command(BaseCommand):
         self._demo_patient_and_admin(Hospital.objects.get(name=HOSPITALS[0]['name']))
         self.stdout.write(self.style.SUCCESS(
             f'Seed done: {Hospital.objects.count()} hospitals, {Department.objects.count()} departments, '
-            f'{Doctor.objects.count()} doctors, {Bed.objects.count()} beds. Patient password: {DEMO_PASSWORD}. Staff/admin: {"custom (env)" if STAFF_PASSWORD != DEMO_PASSWORD else DEMO_PASSWORD}.'))
+            f'{Doctor.objects.count()} doctors, {Bed.objects.count()} beds. Seeded logins reset (patient: {DEMO_PASSWORD}; staff and admin: configured password).'))
         if options.get('activity'):
             self._activity()
 

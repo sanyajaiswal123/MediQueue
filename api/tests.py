@@ -1,3 +1,4 @@
+from hospitals.management.commands.seed_demo import STAFF_PASSWORD
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import Client, TestCase
@@ -83,7 +84,7 @@ class TokenApiTests(ApiBase):
 
     def test_staff_cannot_use_patient_endpoints(self):
         c = Client()
-        c.login(username='reception', password='demo')
+        c.login(username='reception', password=STAFF_PASSWORD)
         res = c.post(reverse('api:token-create'), {'department': self.dept.id, 'age': 1, 'gender': 'M'})
         self.assertEqual(res.status_code, 403)
 

@@ -14,7 +14,8 @@ from opd.views import ACTIVE_TOKEN_SESSION_KEY, PREFERRED_HOSPITAL_COOKIE
 from pharmacy.models import Medicine, Prescription
 from wards.models import Admission, Bed, Ward
 
-PW = 'demo'
+from hospitals.management.commands.seed_demo import STAFF_PASSWORD  # noqa: E402
+PW = STAFF_PASSWORD
 S = Token.Status
 
 
