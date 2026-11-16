@@ -1,0 +1,18 @@
+﻿.venv/
+__pycache__/
+*.pyc
+db.sqlite3
+.env
+node_modules/
+staticfiles/
+frontend/dist/
+
+
+# Not published: project docs, AI/tooling config, handover notes
+docs/
+CLAUDE.md
+.claude/
+.impeccable/
+START_HERE.md
+*.zip
+frontend/node_modules/
