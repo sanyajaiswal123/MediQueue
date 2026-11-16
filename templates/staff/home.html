@@ -1,0 +1,183 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Overview · MediQueue{% endblock %}
+{% block page_header %}<h1 class="sr-only">Overview, {{ hospital }}</h1>{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-4 *:min-w-0 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_minmax(320px,1.12fr)]">
+
+  {# ---------- KPI cards ---------- #}
+  <section class="card kpi" aria-label="Tokens today">
+    <div class="card__head"><h2 class="kpi__title">Tokens today</h2><span class="kpi__icon">{% include "partials/icon.html" with name="ticket" %}</span></div>
+    <p class="kpi__value">{{ counts.issued }}</p>
+    <p class="kpi__foot">
+      <span class="chip {% if capacity_pct >= 90 %}chip--down{% elif capacity_pct >= 60 %}chip--flat{% else %}chip--up{% endif %}">{{ capacity_pct }}%</span> of today's token capacity
+    </p>
+  </section>
+
+  <section class="card kpi" aria-label="Waiting now">
+    <div class="card__head"><h2 class="kpi__title">Waiting now</h2><span class="kpi__icon">{% include "partials/icon.html" with name="clock" %}</span></div>
+    <p class="kpi__value">{{ counts.waiting }}</p>
+    <p class="kpi__foot"><span class="chip chip--flat">~{{ longest_wait }} min</span> longest wait</p>
+  </section>
+
+  <section class="card kpi" aria-label="Beds free">
+    <div class="card__head"><h2 class="kpi__title">Beds free</h2><span class="kpi__icon">{% include "partials/icon.html" with name="bed" %}</span></div>
+    <p class="kpi__value">{{ beds.available }}<small> / {{ beds.total }}</small></p>
+    <p class="kpi__foot"><span class="chip {% if occupancy >= 85 %}chip--down{% else %}chip--flat{% endif %}">{{ occupancy }}%</span> occupied · {{ beds.waiting }} waiting</p>
+  </section>
+
+  {# ---------- Welcome + notices (tall) ---------- #}
+  <section class="card flex flex-col md:col-span-2 xl:col-span-1 xl:row-span-2" aria-labelledby="hello">
+    <div class="card__head">
+      <p class="text-sm font-semibold text-ink">Today at {{ hospital.name }}</p>
+      <span class="card__label">{{ today|date:"D j M" }}</span>
+    </div>
+    <div class="flex flex-1 flex-col items-center justify-center py-6 text-center">
+      <div class="ticket-wrap rotate-[-4deg]" aria-hidden="true">
+        <div class="ticket" style="--perf:68%;width:220px;padding:18px 20px 14px">
+          <p class="text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-soft">Now serving</p>
+          <p class="mt-1 text-left font-display text-[46px] leading-none text-ink">{% if serving_now %}{{ serving_now.label }}{% else %}—{% endif %}</p>
+          <div class="ticket__perf" style="margin:12px -20px"></div>
+          <p class="text-left text-xs text-ink-soft">{% if serving_now %}{{ serving_now.department.name }}{% else %}Nobody called yet{% endif %}</p>
+        </div>
+      </div>
+      <h2 id="hello" class="mt-7 max-w-[16ch] font-serif text-[30px] leading-[1.08] text-ink">{{ greeting }}, {{ first_name }}. Here's today.</h2>
+    </div>
+
+    {% if notices %}
+    <div class="notices" data-carousel aria-label="Notices" tabindex="0">
+      {% for n in notices %}
+      <article class="notice" aria-label="Notice {{ forloop.counter }} of {{ notices|length }}">
+        <p class="flex items-start gap-3 text-sm leading-snug">
+          <span class="avatar avatar--sm" aria-hidden="true">{% include "partials/icon.html" with name=n.icon %}</span>
+          <span><span class="font-semibold">{{ n.strong }}</span> {{ n.text }}</span>
+        </p>
+        <a class="notice__cta" href="{{ n.href }}">{{ n.cta }}{% include "partials/icon.html" with name="chevron-right" %}</a>
+      </article>
+      {% endfor %}
+    </div>
+    {% if notices|length > 1 %}
+    <div class="dots" data-carousel-dots>{% for n in notices %}<button type="button" aria-label="Show notice {{ forloop.counter }}" {% if forloop.first %}aria-current="true"{% endif %}></button>{% endfor %}</div>
+    {% endif %}
+    {% else %}
+    <p class="notice text-sm text-ink-soft">No alerts right now. Queues, beds and stock are within limits.</p>
+    {% endif %}
+  </section>
+
+  {# ---------- Live queue (schedule style) ---------- #}
+  <section class="card md:col-span-2" aria-labelledby="live-title">
+    <div class="card__head">
+      <h2 id="live-title" class="text-xl font-medium text-ink">Live queue</h2>
+      <span class="card__label">Today</span>
+    </div>
+    <div class="mt-4 hidden grid-cols-[84px_1fr] gap-3 px-1 text-sm text-ink-soft sm:grid" aria-hidden="true"><span>Serving</span><span class="grid grid-cols-[32px_1fr_1fr_32px] gap-3 pl-[10px]"><span></span><span>Department</span><span>Next in line</span></span></div>
+    <ul class="mt-2 space-y-2">
+      {% for r in rows %}
+      <li class="sched">
+        <p class="sched__now">{% if r.serving %}{{ r.serving.label }}<small>{{ r.serving.get_status_display }}</small>{% elif not r.dept.is_open %}<span class="text-ink-soft">Closed</span>{% else %}<span class="text-ink-soft">—</span><small>idle</small>{% endif %}</p>
+        <div class="sched__pill">
+          <span class="avatar avatar--sm" aria-hidden="true">{{ r.initials }}</span>
+          <span class="min-w-0"><span class="block truncate text-sm font-medium text-ink">{{ r.doctor|default:r.dept.name }}</span><span class="block truncate text-xs text-ink-soft">{{ r.dept.name }} · {{ r.load.waiting }} waiting</span></span>
+          <span class="min-w-0 text-sm">{% if r.next %}<span class="font-medium tabular">{{ r.next.label }}</span> <span class="truncate text-ink-soft">{{ r.next.patient.name }}</span>{% else %}<span class="text-ink-soft">No one waiting</span>{% endif %}</span>
+          {% if can_reception %}<a class="sched__more" href="{% url 'opd:reception' %}?dept={{ r.dept.pk }}" aria-label="Open the {{ r.dept.name }} queue">{% include "partials/icon.html" with name="more" %}</a>{% else %}<span class="w-8" aria-hidden="true"></span>{% endif %}
+        </div>
+      </li>
+      {% empty %}
+      <li class="text-sm text-ink-soft">No departments yet. Add them in Django Admin.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  {# ---------- Queue status (half donut) ---------- #}
+  <section class="card" aria-labelledby="qs-title">
+    <div class="card__head">
+      <h2 id="qs-title" class="text-xl font-medium text-ink">Queue status</h2>
+      <span class="card__label">Today</span>
+    </div>
+    <svg viewBox="0 0 220 124" class="mx-auto mt-5 w-full max-w-[240px]" role="img" aria-label="{{ counts.completed }} completed, {{ counts.busy }} in consultation, {{ counts.waiting }} waiting">
+      <defs><pattern id="arc-stripes" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(70)"><rect width="7" height="7" style="fill: var(--color-surface)"/><rect width="2.6" height="7" style="fill: var(--chart-blue-1)"/></pattern></defs>
+      {% if queue.total %}
+        {% for a in queue.arcs %}{% if a.value %}<path class="arc arc--{{ a.key }}" d="M 26 108 A 84 84 0 0 1 194 108" pathLength="100" stroke-width="34" stroke-dasharray="{{ a.dash }}" stroke-dashoffset="{{ a.offset }}"/>{% endif %}{% endfor %}
+      {% else %}
+        <path class="arc" d="M 26 108 A 84 84 0 0 1 194 108" style="stroke: var(--track)" stroke-width="34"/>
+      {% endif %}
+    </svg>
+    <ul class="mt-5 space-y-3 text-sm">
+      {% for a in queue.arcs %}
+      <li class="flex items-center gap-3"><span class="dot dot--{{ a.key }}" aria-hidden="true"></span><span class="flex-1 text-ink">{{ a.label }}</span><span class="font-semibold tabular">{{ a.value }}</span></li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  {# ---------- 14-day tokens chart ---------- #}
+  <section class="card md:col-span-2 xl:col-span-3" aria-labelledby="hist-title">
+    <div class="card__head">
+      <div>
+        <h2 id="hist-title" class="text-xl font-medium text-ink">Tokens, last 14 days</h2>
+        <p class="mt-3 text-[44px] font-normal leading-none tracking-[-0.03em] nums-display">{{ fortnight_total }}</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-4 text-sm">
+        <span class="inline-flex items-center gap-2"><span class="size-3.5 rounded bg-[repeating-linear-gradient(135deg,#5a8bf2_0_3px,#8fb1f7_3px_6px)]" aria-hidden="true"></span>Other outcomes</span>
+        <span class="inline-flex items-center gap-2"><span class="size-3.5 rounded bg-ink" aria-hidden="true"></span>Completed</span>
+      </div>
+    </div>
+    <div class="mt-8 grid grid-cols-[auto_1fr] gap-4">
+      <div class="axis" aria-hidden="true">{% for t in ticks %}<span>{{ t }}</span>{% endfor %}<span>0</span></div>
+      <div>
+        <div class="bars" role="list" aria-label="Tokens per day">
+          {% for d in days %}
+          <div class="bar{% if d.today %} is-today{% endif %}" role="listitem" style="--h: {{ d.height }}%" aria-label="{{ d.date|date:'D j M' }}: {{ d.total }} tokens, {{ d.completed }} completed">
+            <span class="bar__tip">{{ d.total }}</span>
+            <div class="bar__stack" style="height: {{ d.height }}%">
+              {% if d.other %}<span class="bar__other" style="flex: {{ d.other }}"></span>{% endif %}
+              {% if d.completed %}<span class="bar__done" style="flex: {{ d.completed }}"></span>{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="mt-3 grid grid-cols-[repeat(14,minmax(0,1fr))] gap-[clamp(6px,1vw,14px)] text-center text-xs text-ink-soft" aria-hidden="true">
+          {% for d in days %}<span class="{% if d.today %}font-semibold text-ink{% endif %}">{% if d.today %}Today{% else %}{{ d.date|date:"j" }}<span class="block">{{ d.date|date:"D"|slice:":2" }}</span>{% endif %}</span>{% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {# ---------- Patients: new vs returning + gender ---------- #}
+  <div class="flex flex-col gap-4 md:col-span-2 xl:col-span-1">
+    <section class="card" aria-labelledby="pt-title">
+      <div class="card__head"><h2 id="pt-title" class="text-xl font-medium text-ink">Patients</h2><span class="card__label">Today</span></div>
+      <div class="mt-4 flex justify-end gap-6 text-right">
+        <div><p class="text-xs text-ink-soft">New</p><p class="text-[28px] leading-none nums-display">{{ new }}</p></div>
+        <div class="border-l border-line pl-6"><p class="text-xs text-ink-soft">Returning</p><p class="text-[28px] leading-none nums-display">{{ returning }}</p></div>
+      </div>
+      {% if people %}
+      <div class="split mt-5" role="img" aria-label="{{ new_pct }} percent new patients">
+        {% if new %}<span class="split__a" style="flex: {{ new }}">{{ new_pct }}%</span>{% endif %}
+        {% if returning %}<span class="split__b" style="flex: {{ returning }}">{% widthratio returning people 100 %}%</span>{% endif %}
+      </div>
+      {% else %}<p class="mt-5 text-sm text-ink-soft">No patients yet today.</p>{% endif %}
+    </section>
+
+    <section class="card" aria-labelledby="g-title">
+      <div class="card__head"><h2 id="g-title" class="text-xl font-medium text-ink">Gender</h2><span class="card__label">Today</span></div>
+      <div class="mt-4 flex items-center gap-6">
+        <div class="relative size-[124px] flex-none">
+          <svg viewBox="0 0 120 120" class="size-full -rotate-90" role="img" aria-label="{{ women }} women, {{ men }} men">
+            <circle cx="60" cy="60" r="46" fill="none" style="stroke: var(--track-live)" stroke-width="16"/>
+            {% for a in gender.arcs %}{% if a.value %}<circle class="arc arc--{{ a.key }}" cx="60" cy="60" r="46" pathLength="100" stroke-width="16" stroke-dasharray="{{ a.dash }}" stroke-dashoffset="{{ a.offset }}"/>{% endif %}{% endfor %}
+          </svg>
+          <div class="absolute inset-0 grid place-content-center text-center">
+            <span class="text-2xl leading-none nums-display">{{ people }}</span>
+            <span class="mt-1 text-[11px] text-ink-soft">patients</span>
+          </div>
+        </div>
+        <ul class="space-y-3 text-sm">
+          <li><span class="flex items-center gap-2 text-ink-soft"><span class="dot dot--women" aria-hidden="true"></span>Women</span><span class="text-2xl leading-none nums-display">{{ women }}</span></li>
+          <li><span class="flex items-center gap-2 text-ink-soft"><span class="dot dot--men" aria-hidden="true"></span>Men</span><span class="text-2xl leading-none nums-display">{{ men }}</span></li>
+        </ul>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

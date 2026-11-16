@@ -1,0 +1,18 @@
+<header class="topnav" aria-label="Site">
+  <a href="{% url 'home' %}" class="text-[17px] font-semibold tracking-tight text-[var(--topnav-ink)]">Medi<span class="text-[var(--topnav-accent)]">Queue</span></a>
+  <nav class="topnav__links" aria-label="Main">
+    <a href="{% url 'city' %}">City dashboard</a>
+    {% if is_patient %}<a href="{% url 'opd:my_token' %}">My token</a><a href="{% url 'opd:history' %}">My visits</a>{% endif %}
+    {% if user.is_authenticated %}<a href="{% url 'accounts:password_change' %}">Password</a>{% endif %}
+    {% if user.is_authenticated %}
+    <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="cursor-pointer hover:text-[var(--topnav-ink)]">Sign out</button></form>
+    {% else %}<a href="{% url 'accounts:login' %}">Sign in</a>{% endif %}
+  </nav>
+  {% if not user.is_authenticated %}<a class="topnav__signin" href="{% url 'accounts:login' %}">Sign in</a>{% elif is_patient %}<a class="topnav__signin" href="{% url 'opd:my_token' %}">My token</a>{% endif %}
+  {% include "partials/theme_toggle.html" with variant="nav" %}
+  {% if is_staff_user %}
+  <a class="topnav__cta" href="{% url 'staff_home' %}">Staff portal <span>{% include "partials/icon.html" with name="arrow-right" %}</span></a>
+  {% else %}
+  <a class="topnav__cta" href="{% url 'opd:book' %}">Book a token <span>{% include "partials/icon.html" with name="arrow-right" %}</span></a>
+  {% endif %}
+</header>

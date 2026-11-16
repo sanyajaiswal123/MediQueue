@@ -1,0 +1,74 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Dispense · MediQueue{% endblock %}
+{% block heading %}Dispense{% endblock %}
+
+{% block actions %}<a class="btn" href="{% url 'pharmacy:stock' %}">{% include "partials/icon.html" with name="stock" %}Stock and alerts</a>{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 items-start gap-4 *:min-w-0 xl:grid-cols-[1fr_360px]">
+  <section aria-labelledby="pending-title">
+    <div class="mb-3 flex items-baseline justify-between">
+      <h2 id="pending-title" class="font-serif text-3xl">Waiting at the counter</h2>
+      <p class="text-sm text-ink-soft">{{ pending|length }} prescription{{ pending|pluralize }}, oldest first</p>
+    </div>
+    {% for rx in pending %}
+    <article class="card mb-3">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p><span class="token-label text-lg">{{ rx.token.label }}</span> <span class="text-ink-soft">· {{ rx.token.patient.name }}</span></p>
+          <p class="text-sm text-ink-soft">{{ rx.doctor|default:"Doctor not set" }} · {{ rx.token.department.name }} · {{ rx.created_at|time:"H:i" }}</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <form method="post" action="{% url 'pharmacy:reject' rx.pk %}">
+            {% csrf_token %}
+            <button class="btn btn--danger-ghost">Reject</button>
+          </form>
+          <form method="post" action="{% url 'pharmacy:dispense' rx.pk %}">
+            {% csrf_token %}
+            <button class="btn btn--brand" {% if rx.problems %}aria-describedby="rx-{{ rx.pk }}-issue"{% endif %}>{% include "partials/icon.html" with name="pill" %}Dispense all</button>
+          </form>
+        </div>
+      </div>
+      <table class="table mt-4">
+        <thead><tr><th>Medicine</th><th class="num">Qty</th><th class="num">In stock</th><th>Check</th></tr></thead>
+        <tbody>
+        {% for item in rx.items.all %}
+          <tr>
+            <td>{{ item.medicine.name }} <span class="text-xs text-ink-soft">exp. {{ item.medicine.expiry_date|date:"M Y" }}</span></td>
+            <td class="num font-semibold">{{ item.quantity }}</td>
+            <td class="num text-ink-soft">{{ item.medicine.quantity }}</td>
+            <td>{% if item.issue %}{% include "partials/badge.html" with tone="bad" icon="alert" text=item.issue %}{% else %}{% include "partials/badge.html" with tone="ok" icon="check" text="Ready" %}{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% if rx.problems %}<p id="rx-{{ rx.pk }}-issue" class="mt-3 text-sm text-bad">Dispensing is all or nothing. It will be refused until the flagged line is fixed.</p>{% endif %}
+    </article>
+    {% empty %}
+    <div class="card py-14 text-center">
+      <div class="ghost" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p class="font-serif text-2xl">No prescriptions waiting</p>
+      <p class="mt-2 text-sm text-ink-soft">Doctors' prescriptions arrive here when they complete a consultation.</p>
+      <a class="btn btn--dark mt-6" href="{% url 'pharmacy:stock' %}">Check stock</a>
+    </div>
+    {% endfor %}
+  </section>
+
+  <section class="card" aria-labelledby="done-title">
+    <h2 id="done-title" class="card__title">Dispensed today</h2>
+    {% if done %}
+    <ul class="mt-4 divide-y divide-line/60">
+      {% for rx in done %}
+      <li class="flex items-center justify-between gap-3 py-3 text-sm">
+        <span><span class="token-label">{{ rx.token.label }}</span> <span class="text-ink-soft">· {{ rx.token.patient.name }}</span></span>
+        <span class="text-ink-soft">{{ rx.items.all|length }} item{{ rx.items.all|length|pluralize }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="mt-4 text-sm text-ink-soft">Nothing dispensed yet today.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

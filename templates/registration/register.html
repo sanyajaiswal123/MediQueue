@@ -1,0 +1,38 @@
+{% extends "auth/base_auth.html" %}
+
+{% block title %}Create account · MediQueue{% endblock %}
+{% block heading %}Create your account{% endblock %}
+{% block lede %}Book a token from your phone and follow your place in the queue.{% endblock %}
+
+{% block form %}
+<form method="post" novalidate class="space-y-5">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <p class="field__error" role="alert">{{ form.non_field_errors.0 }}</p>
+  {% endif %}
+  <div class="grid gap-5 sm:grid-cols-2">
+    {% include "partials/field.html" with field=form.first_name %}
+    {% include "partials/field.html" with field=form.phone %}
+  </div>
+  <div class="grid gap-5 sm:grid-cols-2">
+    {% include "partials/field.html" with field=form.username %}
+    {% include "partials/field.html" with field=form.email %}
+  </div>
+  {% include "partials/field.html" with field=form.password1 %}
+  {% include "partials/field.html" with field=form.password2 %}
+  <button type="submit" class="btn-primary w-full" style="border-radius:999px;height:52px">Create account</button>
+</form>
+{% endblock %}
+
+{% block alt %}Already registered? <a class="link" href="{% url 'accounts:login' %}">Sign in</a>{% endblock %}
+
+{% block side %}
+<div>
+  <p class="auth-side__title">Three steps. No queue.</p>
+</div>
+<ol class="auth-steps mt-10">
+  <li><i></i>Create your account once</li>
+  <li><i></i>Pick a hospital and department</li>
+  <li><i></i>Come in when it is nearly your turn</li>
+</ol>
+{% endblock %}

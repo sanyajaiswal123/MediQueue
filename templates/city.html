@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}City dashboard · MediQueue{% endblock %}
+{% block description %}Live OPD waits and free beds across city hospitals. Aggregate numbers only.{% endblock %}
+{% block body_class %}bg-paper{% endblock %}
+
+{% block body %}
+{% include "partials/topnav.html" %}
+<main id="main" class="mx-auto max-w-[1280px] px-4 pb-24 pt-14 sm:px-8">
+  <div id="city" data-api="{% url 'api:city-hospitals' %}" data-detail="/api/hospitals/">
+    <h1 class="font-serif text-[clamp(2.6rem,5vw,4.4rem)] leading-[1.02]">Where to go right now</h1>
+    <p class="mt-3 text-ink-soft">Loading live numbers… <noscript>This dashboard needs JavaScript. The raw data is at <a class="link" href="{% url 'api:city-hospitals' %}">/api/city/hospitals/</a>.</noscript></p>
+  </div>
+</main>
+{% endblock %}
+
+{% block scripts %}<script type="module" src="{% static 'dist/city.js' %}"></script>{% endblock %}

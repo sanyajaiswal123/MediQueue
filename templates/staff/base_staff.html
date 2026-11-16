@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block body_class %}staff-shell{% endblock %}
+
+{% block body %}
+<a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-24 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-ink focus:px-4 focus:py-2 focus:text-white">Skip to content</a>
+{% include "partials/sidebar.html" %}
+<div class="app-frame">
+  <header class="topbar">
+    <a class="tpill tpill--brand" href="{% url 'staff_home' %}"><span class="brand-mark" aria-hidden="true">M</span>MEDIQUEUE</a>
+    <span class="tpill tpill--context">{% include "partials/icon.html" with name="calendar" %}{% now "l, j F" %} · <strong>{{ hospital|default:request.user.profile.hospital|default:"All hospitals" }}</strong></span>
+
+    <nav class="ml-auto flex flex-wrap items-center gap-2" aria-label="Quick actions">
+      {% with role=request.user.profile.role %}
+      {% if role == "RECEPTIONIST" or role == "ADMIN" or request.user.is_superuser %}
+        <a class="tpill" href="{% url 'opd:reception' %}">{% include "partials/icon.html" with name="plus" %}Token</a>
+        <a class="tpill" href="{% url 'wards:admissions' %}">{% include "partials/icon.html" with name="plus" %}Admission</a>
+      {% elif role == "DOCTOR" %}
+        <a class="tpill" href="{% url 'opd:console' %}">{% include "partials/icon.html" with name="megaphone" %}Consultations</a>
+        <a class="tpill" href="{% url 'wards:admissions' %}">{% include "partials/icon.html" with name="plus" %}Admission</a>
+      {% elif role == "PHARMACIST" %}
+        <a class="tpill" href="{% url 'pharmacy:dispense_list' %}">{% include "partials/icon.html" with name="pill" %}Dispense</a>
+        <a class="tpill" href="{% url 'pharmacy:stock' %}">{% include "partials/icon.html" with name="plus" %}Stock</a>
+      {% endif %}
+      {% endwith %}
+      {% include "partials/theme_toggle.html" with variant="pill" %}
+      <a class="tpill tpill--avatar" href="{% url 'accounts:password_change' %}" title="Change password">
+        <span class="avatar" aria-hidden="true">{{ request.user.first_name|default:request.user.username|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}</span>
+        <span><span class="font-medium">{{ request.user.get_full_name|default:request.user.username }}</span> <span class="text-ink-soft">· {{ request.user.profile.get_role_display }}</span></span>
+      </a>
+    </nav>
+  </header>
+
+  {% block page_header %}
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-4 px-1">
+    <div>
+      <p class="text-sm text-ink-soft">{% block crumb %}{{ hospital|default:request.user.profile.hospital|default:"All hospitals" }}{% endblock %}</p>
+      <h1 class="font-serif text-[40px] leading-[1.05] text-ink">{% block heading %}{% endblock %}</h1>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">{% block actions %}{% endblock %}</div>
+  </div>
+  {% endblock %}
+
+  <main id="main">
+    {% include "partials/messages.html" %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}

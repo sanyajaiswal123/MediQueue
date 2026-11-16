@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}MediQueue · Know your turn before you leave home{% endblock %}
+{% block body_class %}bg-paper landing{% endblock %}
+{% block head %}<script>
+  /* Hide the hero until GSAP has set its start states (no flash); a timeout always reveals it. */
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.documentElement.classList.add('motion');
+    setTimeout(function () { document.documentElement.classList.add('motion-ready'); }, 3000);
+  }
+</script>{% endblock %}
+
+{% block body %}
+{% include "partials/topnav.html" %}
+
+<main id="main">
+  {# ---------- Hero ---------- #}
+  <section class="hero grain relative -mt-[80px] overflow-hidden px-4 pb-16 pt-[calc(2.5rem+80px)] sm:px-8 sm:pt-[calc(3rem+80px)] lg:pb-24" aria-labelledby="hero-title">
+    <h1 id="hero-title" class="hero__title relative z-0 text-center font-display uppercase leading-[0.86] text-brand" data-hero-title>
+      <span class="sr-only">Now serving: MediQueue, hospital queues you can see from home.</span>
+      <span aria-hidden="true" class="block whitespace-nowrap text-[clamp(4.5rem,18.5vw,19rem)] tracking-[-0.01em] max-sm:hidden">Now serving</span>
+      <span aria-hidden="true" class="block text-[clamp(5rem,30vw,9rem)] sm:hidden">Now<br>serving</span>
+    </h1>
+
+    <div class="relative z-[2] mx-auto grid max-w-[1280px] gap-10 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,300px)]">
+      {# Ticket: overlaps the bottom third of the headline, under "SERV". #}
+      <div class="pointer-events-none -mt-6 flex justify-center lg:order-2 lg:-mt-[clamp(2.5rem,4.2vw,4.75rem)]" data-hero-ticket>
+        <a href="{% url 'city' %}" class="ticket-wrap pointer-events-auto rotate-[-7deg]"><span class="sr-only">Open the city dashboard.</span>
+          <div class="ticket" style="--perf:68%">
+            <div class="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-soft">
+              <span>{% if stats.quiet %}Tokens left today{% else %}Waiting now{% endif %}</span><span>City OPD</span>
+            </div>
+            <p class="mb-3 mt-2 font-display text-[72px] leading-[0.9] text-ink sm:text-[clamp(84px,11vw,124px)]">{% if stats.quiet %}{{ stats.tokens_left }}{% else %}{{ stats.waiting }}{% endif %}</p>
+            <p class="text-sm text-ink-soft">{% if stats.quiet and stats.tokens_left %}No queue right now. Walk in or book ahead.{% elif stats.quiet %}Booking is closed for today.{% else %}people in outpatient queues{% endif %}</p>
+            <div class="ticket__perf" aria-hidden="true"></div>
+            <p class="flex items-center justify-between text-sm"><span>{{ stats.departments }} departments open</span><span class="tabular text-ink-soft">as of {% now "H:i" %}</span></p>
+          </div>
+        </a>
+      </div>
+
+      {# Reading order: promise, one-line explainer, action, then the four pillars. Phones: promise, action, explainer, pillars. #}
+      <div class="flex flex-col lg:order-1 lg:block lg:pt-10" data-hero-copy>
+        <p class="order-1 mt-4 max-w-[14ch] font-serif text-[clamp(2.4rem,4vw,3.8rem)] leading-[1.02] text-ink lg:mt-0">Know your turn before you leave home.</p>
+        <p class="order-3 mt-8 max-w-[34ch] text-[15px] font-light leading-relaxed text-ink lg:mt-6">Book from your phone, watch your place move, and come in when it is nearly your turn.</p>
+        <div class="order-2 mt-6 flex flex-wrap items-center gap-x-5 gap-y-3 lg:mt-8">
+          <a href="{% url 'opd:book' %}" class="btn-primary">Book a token</a>
+          <span class="text-sm text-ink-soft">Free · needs a patient account</span>
+        </div>
+        <p class="order-4 mt-8 lg:mt-10"><span class="tag">OPD tokens · Ward beds · Pharmacy stock · City dashboard</span></p>
+      </div>
+
+      {# Right column: live fact beside the ticket, then the hospital-side note. One stack, so the column ends where the copy column does not dominate. #}
+      <div class="max-w-[34ch] lg:order-3 lg:mt-20 lg:self-start lg:justify-self-end" data-hero-aside>
+        <p class="text-[15px] leading-relaxed text-ink-soft">{% if stats.shortest and not stats.quiet %}Shortest wait right now: <span class="font-medium text-ink">{{ stats.shortest.name }}</span> at {{ stats.shortest.hospital }}, about <span class="font-medium text-ink nums-display">{{ stats.shortest.wait }} min</span>.{% else %}No queue right now.{% endif %} <a class="link font-medium" href="{% url 'city' %}">Compare hospitals &rarr;</a></p>
+        <p class="mt-8 border-t border-line pt-4 text-sm leading-relaxed text-ink-soft">Hospital staff: queue, admissions and pharmacy on one screen. {% if not is_staff_user %}<a class="link" href="{% url 'accounts:login' %}">Staff sign in</a>{% else %}<a class="link" href="{% url 'staff_home' %}">Open the staff portal</a>{% endif %}</p>
+      </div>
+    </div>
+  </section>
+
+  {# ---------- Live departures strip: real department waits, aggregate only ---------- #}
+  {% if ticker %}
+  <section class="ticker bg-[var(--night)] text-[var(--day)]" aria-label="Live OPD waits">
+    <div class="ticker__track" data-ticker>
+      {% for pass in "ab" %}
+      <ul class="ticker__group" {% if forloop.last %}aria-hidden="true"{% endif %}>
+        {% for t in ticker %}
+        <li class="ticker__item">
+          <span class="font-display text-[22px] uppercase tracking-wide text-[#f08a80]">{{ t.code }}</span>
+          <span class="text-[var(--day)]">{{ t.name }}</span>
+          <span class="text-[var(--day)]/55">{{ t.hospital }}</span>
+          {% if t.waiting %}<span class="nums-display text-[22px] font-light text-white">~{{ t.wait }}<span class="text-sm text-[var(--day)]/60"> min</span></span>{% else %}<span class="text-[15px] font-light text-white">No queue</span>{% endif %}
+          <span class="ticker__sep" aria-hidden="true"></span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {# ---------- The problem, and what answers it ---------- #}
+  <section class="mx-auto max-w-[1280px] px-4 pt-24 sm:px-8" aria-labelledby="problem-title">
+    <span class="tag" data-wipe>Why this exists</span>
+    <h2 id="problem-title" class="mt-5 max-w-[22ch] font-serif text-[clamp(2.4rem,4.6vw,4.2rem)] leading-[1.02] text-ink" data-split>Three things hospitals still do blind.</h2>
+    <ol class="mt-14 grid gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-3">
+      <li class="bg-paper p-8">
+        <p class="font-display text-[44px] leading-none text-brand" aria-hidden="true">01</p>
+        <h3 class="mt-4 text-xl font-medium">Crowded OPD halls</h3>
+        <p class="mt-2 font-light text-ink-soft">Patients arrive early and stand in line for hours. <span class="text-ink">Tokens and live waits</span> let them wait anywhere and arrive near their turn.</p>
+      </li>
+      <li class="bg-paper p-8">
+        <p class="font-display text-[44px] leading-none text-brand" aria-hidden="true">02</p>
+        <h3 class="mt-4 text-xl font-medium">No view of free beds</h3>
+        <p class="mt-2 font-light text-ink-soft">Nobody knows which ward has space. <span class="text-ink">Bed boards and an admission waiting list</span> fill the next clean bed in priority order.</p>
+      </li>
+      <li class="bg-paper p-8">
+        <p class="font-display text-[44px] leading-none text-brand" aria-hidden="true">03</p>
+        <h3 class="mt-4 text-xl font-medium">Pharmacy that runs out unnoticed</h3>
+        <p class="mt-2 font-light text-ink-soft">Stock hits zero or expires on the shelf. <span class="text-ink">Prescriptions handed over complete or not at all, plus reorder and expiry flags,</span> keep inventory honest.</p>
+      </li>
+    </ol>
+  </section>
+
+  {# ---------- City numbers ---------- #}
+  <section class="mx-auto max-w-[1280px] px-4 py-24 sm:px-8" aria-labelledby="numbers-title">
+    <div class="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
+      <div>
+        <span class="tag" data-wipe>Across the city, right now</span>
+        <h2 id="numbers-title" class="mt-5 font-serif text-[clamp(2.4rem,4.6vw,4.2rem)] leading-[1.02] text-ink" data-split>Check before you travel.</h2>
+      </div>
+      <p class="max-w-[42ch] text-[15px] font-light leading-relaxed text-ink">These numbers come straight from the hospitals' own queues and bed boards. They are totals only. No patient is ever named outside the hospital.</p>
+    </div>
+    <div class="mt-16 h-px origin-left bg-line" data-rule></div>
+    <dl class="grid gap-10 pt-10 md:grid-cols-3">
+      <div class="flex items-center gap-5">
+        <dt class="sr-only">Beds free</dt>
+        <dd class="text-[clamp(3.6rem,6vw,5.5rem)] font-extralight leading-none tracking-[-0.03em] text-brand nums-display" data-count="{{ stats.beds_free }}">{{ stats.beds_free }}<span class="text-[0.5em] text-brand-dark">/{{ stats.beds_total }}</span></dd>
+        <p class="max-w-[12ch] text-sm leading-snug text-brand-dark" aria-hidden="true">beds free right now</p>
+      </div>
+      <div class="flex items-center gap-5">
+        {% if stats.served %}
+        <dt class="sr-only">Patients seen today</dt>
+        <dd class="text-[clamp(3.6rem,6vw,5.5rem)] font-extralight leading-none tracking-[-0.03em] text-brand nums-display" data-count="{{ stats.served }}">{{ stats.served }}</dd>
+        <p class="max-w-[12ch] text-sm leading-snug text-brand-dark" aria-hidden="true">patients seen today</p>
+        {% else %}
+        <dt class="sr-only">Departments open</dt>
+        <dd class="text-[clamp(3.6rem,6vw,5.5rem)] font-extralight leading-none tracking-[-0.03em] text-brand nums-display" data-count="{{ stats.departments }}">{{ stats.departments }}</dd>
+        <p class="max-w-[12ch] text-sm leading-snug text-brand-dark" aria-hidden="true">departments open today</p>
+        {% endif %}
+      </div>
+      <div class="flex items-center gap-5">
+        <dt class="sr-only">Waiting for a bed</dt>
+        <dd class="text-[clamp(3.6rem,6vw,5.5rem)] font-extralight leading-none tracking-[-0.03em] text-brand nums-display" data-count="{{ stats.admissions_waiting }}">{{ stats.admissions_waiting }}</dd>
+        <p class="max-w-[12ch] text-sm leading-snug text-brand-dark" aria-hidden="true">waiting for a bed</p>
+      </div>
+    </dl>
+  </section>
+
+  {# ---------- How it works: one ticket through its life (pinned on desktop) ---------- #}
+  <section class="journey bg-surface" aria-labelledby="journey-title" data-journey>
+    <div class="mx-auto grid max-w-[1280px] gap-12 px-4 py-24 sm:px-8 lg:min-h-screen lg:grid-cols-[1fr_1fr] lg:items-center lg:py-0">
+      <div>
+        <span class="tag" data-wipe>From booking to the doctor's room</span>
+        <h2 id="journey-title" class="mt-5 max-w-[14ch] font-serif text-[clamp(2.4rem,4.6vw,4.2rem)] leading-[1.02] text-ink" data-split>One token, start to finish.</h2>
+        <div class="mt-12 flex items-start gap-8">
+          <p class="shrink-0 font-light text-[44px] leading-none text-ink" aria-hidden="true">{<span data-step-now>1</span><span class="text-[0.6em] text-ink-soft"> / 4</span>}</p>
+          <div class="relative pl-6"><span class="journey__rail" aria-hidden="true"><span data-rail-fill></span></span>
+          <ol class="journey__steps space-y-8" data-steps>
+            <li data-step="1"><h3 class="text-xl font-medium">Book</h3><p class="mt-1 max-w-[40ch] font-light text-ink-soft">Pick a hospital and department. You get a token like CAR-007.</p></li>
+            <li data-step="2"><h3 class="text-xl font-medium">Wait anywhere</h3><p class="mt-1 max-w-[40ch] font-light text-ink-soft">Your phone shows how many people are ahead and roughly how long.</p></li>
+            <li data-step="3"><h3 class="text-xl font-medium">Get called</h3><p class="mt-1 max-w-[40ch] font-light text-ink-soft">When the doctor calls you, the screen tells you which room.</p></li>
+            <li data-step="4"><h3 class="text-xl font-medium">Seen</h3><p class="mt-1 max-w-[40ch] font-light text-ink-soft">The token closes. If the doctor prescribes, it goes straight to the pharmacy counter.</p></li>
+          </ol></div>
+        </div>
+      </div>
+
+      <div class="flex justify-center" aria-hidden="true">
+        {# One ticket, four coherent states (data-state: waiting | called | seen), driven by the scroll step. #}
+        <div class="ticket-wrap rotate-[3deg]" data-journey-ticket>
+          <div class="ticket journey-ticket" data-state="waiting" style="--perf:70%; width:min(400px,82vw); padding:30px 32px 24px">
+            <div class="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-soft"><span>Cardiology</span><span>City Care</span></div>
+            <p class="mt-2 whitespace-nowrap font-display text-[clamp(64px,6.4vw,88px)] leading-[0.9] text-ink">CAR-007</p>
+            <p class="journey-ticket__ahead mt-3 h-10 items-baseline gap-2 text-ink-soft"><span class="font-light text-[40px] leading-none text-ink tabular" data-ahead>6</span><span data-ahead-label>people ahead</span></p>
+            <p class="journey-ticket__turn mt-3 h-10 items-center font-serif text-[30px] leading-none text-ink">It's your turn</p>
+            <div class="ticket__perf" style="margin:16px -32px"></div>
+            <div class="journey__stub relative -mx-8 -mb-6 overflow-hidden px-8 pb-6 pt-1">
+              <p class="flex items-center justify-between text-sm"><span data-stub-text>About 48 min</span><span class="tabular text-ink-soft">Waiting</span></p>
+              <div class="absolute inset-0 z-[2] bg-live" data-stub-fill style="clip-path: inset(0 100% 0 0)">
+                <p class="flex h-full items-center justify-between px-8 pb-6 pt-1 text-sm font-semibold text-[var(--on-live)]"><span>Go to Room 12</span><span>Called</span></p>
+              </div>
+              <div class="absolute inset-0 z-[3] bg-[var(--ticket-paper)]" data-stub-done style="clip-path: inset(0 100% 0 0)">
+                <p class="flex h-full items-center justify-between px-8 pb-6 pt-1 text-sm"><span>To pharmacy, if prescribed</span><span class="font-semibold">Seen</span></p>
+              </div>
+            </div>
+            <div class="pointer-events-none absolute right-5 top-[47%] z-[4] rounded-md border-[3px] border-brand px-3 py-1 font-display text-5xl uppercase tracking-wide text-brand opacity-0" data-stamp>Seen</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {# ---------- Modules: overlapping circles ---------- #}
+  <section class="mx-auto max-w-[1280px] px-4 py-28 text-center sm:px-8" aria-labelledby="modules-title">
+    <span class="tag" data-wipe>Four desks, one system</span>
+    <h2 id="modules-title" class="mx-auto mt-5 max-w-[20ch] font-serif text-[clamp(2.4rem,4.6vw,4.2rem)] leading-[1.02] text-ink" data-split>Every counter works from the same numbers.</h2>
+    <p class="mx-auto mt-5 max-w-[56ch] font-light text-ink-soft">Reception, doctors, wards and the pharmacy each see their own screen. The city sees the totals.</p>
+    {# Each module carries its live number; the name is always visible, the detail line reveals on hover/focus/tap. #}
+    <ul class="circles mt-16" data-circles>
+      <li class="circle is-active" tabindex="0">
+        <span class="circle__no">01 · Outpatient queue</span>
+        <span class="circle__stat nums-display">{{ stats.waiting }}</span><span class="circle__unit">waiting now</span>
+        <span class="circle__text">Urgent cases go first. If you miss three calls, the token closes.</span>
+      </li>
+      <li class="circle" tabindex="0">
+        <span class="circle__no">02 · Beds</span>
+        <span class="circle__stat nums-display">{{ stats.beds_free }}</span><span class="circle__unit">beds free</span>
+        <span class="circle__text">{{ stats.admissions_waiting }} on the admission list. When a ward is full, emergencies get the next clean bed.</span>
+      </li>
+      <li class="circle" tabindex="0">
+        <span class="circle__no">03 · Pharmacy</span>
+        <span class="circle__stat nums-display">{{ stats.medicines_in_stock }}</span><span class="circle__unit">medicines in stock</span>
+        <span class="circle__text">{{ stats.low_stock }} to reorder, {{ stats.expiring }} expiring soon. A prescription is handed over complete, or not at all.</span>
+      </li>
+      <li class="circle">
+        <a class="circle__link" href="{% url 'city' %}">
+          <span class="circle__no">04 · City dashboard</span>
+          <span class="circle__stat nums-display">{{ stats.hospitals }}</span><span class="circle__unit">hospitals, live</span>
+          <span class="circle__text">Totals per hospital, never patient data. Open the dashboard →</span>
+        </a>
+      </li>
+    </ul>
+    {# Role entry points: links over existing screens only. #}
+    <ul class="mx-auto mt-16 max-w-[900px] border-t border-line text-left" aria-label="Where do you start?">
+      {% for who, what, url in roles %}
+      <li class="border-b border-line"><a class="group flex items-baseline justify-between gap-6 py-5 transition-colors hover:text-brand" href="{{ url }}"><span class="text-xs font-semibold uppercase tracking-[0.14em] text-ink-soft">{{ who }}</span><span class="font-serif text-[clamp(1.5rem,2.6vw,2.1rem)] leading-none">{{ what }} <span aria-hidden="true" class="inline-block transition-transform group-hover:translate-x-1">&rarr;</span></span></a></li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  {# ---------- Closing band ---------- #}
+  <section class="auth-panel grid gap-14 px-4 py-24 sm:px-16 lg:grid-cols-[1fr_auto] lg:items-center" aria-labelledby="close-title">
+    <div class="flex flex-col items-start gap-8">
+      <h2 id="close-title" class="max-w-[18ch] font-serif text-[clamp(2.6rem,5vw,4.8rem)] leading-[1.02] text-white" data-split="light">Skip the waiting room, not the queue.</h2>
+      <div class="flex flex-wrap items-center gap-6">
+        <a href="{% url 'opd:book' %}" class="btn-primary !bg-[var(--day)] !text-[#141414] hover:!bg-white">Book a token</a>
+        <a href="{% url 'accounts:login' %}" class="text-white underline underline-offset-4">Staff sign in</a>
+      </div>
+    </div>
+    {# The page ends on the ticket: tokens still bookable today. #}
+    <div class="ticket-wrap justify-self-center rotate-[6deg] lg:mr-8" aria-hidden="true">
+      <div class="ticket" style="--perf:66%; width:min(300px,78vw)">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-soft">{% if stats.quiet %}Beds free now{% else %}Still open today{% endif %}</p>
+        <p class="mt-2 font-display text-[88px] leading-[0.9] text-ink">{% if stats.quiet %}{{ stats.beds_free }}{% else %}{{ stats.tokens_left }}{% endif %}</p>
+        <p class="mt-2 text-sm text-ink-soft">{% if stats.quiet %}of {{ stats.beds_total }} beds across the city{% else %}tokens left across {{ stats.departments }} departments{% endif %}</p>
+        <div class="ticket__perf"></div>
+        <p class="text-sm">{% if stats.shortest and not stats.quiet %}Quickest: {{ stats.shortest.name }} · ~{{ stats.shortest.wait }} min{% elif stats.shortest %}Walk in at {{ stats.shortest.name }}{% else %}Booking opens tomorrow{% endif %}</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="bg-[var(--night)] px-4 py-14 text-[var(--day)] sm:px-16">
+  <div class="mx-auto flex max-w-[1280px] flex-col gap-8 md:flex-row md:items-end md:justify-between">
+    <p class="font-display text-[clamp(3rem,8vw,6rem)] uppercase leading-none" data-wordmark>MediQueue</p>
+    <nav class="flex gap-6 text-sm text-[var(--day)]/75" aria-label="Footer">
+      <a href="{% url 'opd:book' %}" class="hover:text-white">Book</a>
+      <a href="{% url 'city' %}" class="hover:text-white">City dashboard</a>
+      <a href="{% url 'accounts:login' %}" class="hover:text-white">Staff sign in</a>
+    </nav>
+  </div>
+  <p class="mx-auto mt-10 max-w-[1280px] text-xs text-[var(--day)]/60">INT253 project · Django 5.2 · Django REST Framework · React · public pages show aggregate data only</p>
+</footer>
+{% endblock %}
+
+{% block scripts %}<script type="module" src="{% static 'dist/landing.js' %}"></script>{% endblock %}

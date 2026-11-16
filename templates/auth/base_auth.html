@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block body_class %}bg-paper{% endblock %}
+
+{% block body %}
+{% include "partials/theme_toggle.html" with variant="float" %}
+<div class="grid min-h-screen lg:grid-cols-2">
+  <main id="main" class="flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-20">
+    <a href="{% url 'home' %}" class="mb-10 w-fit text-lg font-semibold tracking-tight text-ink">Medi<span class="text-brand">Queue</span></a>
+    <div class="w-full max-w-md">
+      <h1 class="font-serif text-[clamp(2.4rem,5vw,3.2rem)] leading-[1.05] text-ink text-balance">{% block heading %}{% endblock %}</h1>
+      <p class="mt-3 max-w-[40ch] text-ink-soft">{% block lede %}{% endblock %}</p>
+      <div class="mt-9">{% block form %}{% endblock %}</div>
+      <p class="mt-7 text-sm text-ink-soft">{% block alt %}{% endblock %}</p>
+    </div>
+  </main>
+
+  <aside class="auth-side hidden lg:flex" aria-hidden="true">
+    {% block side %}
+    <div>
+      <p class="auth-side__title">Your turn, on time.</p>
+      <p class="auth-side__text">Book from your phone. Come in when it is nearly your turn.</p>
+    </div>
+    <div class="pass-wrap">
+      <section class="ticket pass pass--sample">
+        <div class="pass__caps"><span>MediQueue · OPD token</span><span>Sample</span></div>
+        <div class="pass__route">
+          <span class="pass__code">CAR</span>
+          <span class="pass__line"><svg viewBox="0 0 30 14"><rect x="1" y="1" width="28" height="12" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 1v12" stroke="currentColor" stroke-width="2"/><rect x="2.5" y="2.5" width="12" height="9" rx="4.5" fill="currentColor" opacity=".35"/></svg></span>
+          <span class="pass__code">R-12</span>
+        </div>
+        <p class="pass__label tabular">CAR-007</p>
+        <div class="ticket__perf" aria-hidden="true"></div>
+        <dl class="pass__stub">
+          <div><dt>Ahead</dt><dd>2</dd></div>
+          <div><dt>Wait</dt><dd>~30<small> min</small></dd></div>
+          <div><dt>Booked</dt><dd>10:42</dd></div>
+        </dl>
+      </section>
+    </div>
+    {% endblock %}
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}My visits · MediQueue{% endblock %}
+{% block body_class %}patient-bg{% endblock %}
+
+{% block body %}
+{% include "partials/topnav.html" %}
+<main id="main" class="mx-auto max-w-[680px] px-4 pb-20 pt-10">
+  <h1 class="font-serif text-[clamp(2.4rem,7vw,3.2rem)] leading-[1.02] text-ink">My visits</h1>
+  <p class="mt-2 text-ink-soft">Every token you have taken, newest first.</p>
+
+  {% if visits %}
+  <ul class="mt-8 divide-y divide-line border-y border-line">
+    {% for t in visits %}
+    <li>
+      <a href="{% url 'opd:track' t.pk %}" class="grid grid-cols-[auto_1fr_auto] items-center gap-4 py-5 text-ink no-underline hover:bg-[var(--row-hover)]">
+        <span class="font-display text-[26px] leading-none tracking-wide">{{ t.label }}</span>
+        <span class="min-w-0">
+          <span class="block truncate font-medium">{{ t.department.name }} · {{ t.department.hospital.name }}</span>
+          <span class="block text-sm text-ink-soft">{{ t.date|date:"j M Y" }}{% if t.rx_status %} · Prescription {{ t.rx_status|lower }}{% endif %}</span>
+        </span>
+        {% include "partials/badge.html" with status=t.status %}
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="mt-10 rounded-3xl bg-surface p-10 text-center">
+    <p class="font-serif text-2xl">No visits yet</p>
+    <p class="mt-2 text-sm text-ink-soft">Book a token and it will appear here.</p>
+    <a href="{% url 'opd:book' %}" class="btn-primary mt-6" style="border-radius:999px">Book a token</a>
+  </div>
+  {% endif %}
+</main>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Ward board · MediQueue{% endblock %}
+{% block heading %}Ward board{% endblock %}
+
+{% block actions %}<a class="btn btn--brand" href="{% url 'wards:admissions' %}">{% include "partials/icon.html" with name="admit" %}Admit a patient</a>{% endblock %}
+
+{% block content %}
+<p class="mb-6 flex flex-wrap gap-x-8 gap-y-2 text-sm text-ink-soft">
+  <span><span class="nums-display text-2xl font-light text-ink">{{ counts.available }}</span> of {{ counts.total }} beds free</span>
+  <span><span class="nums-display text-2xl font-light text-ink">{{ counts.occupied }}</span> occupied</span>
+  <span><span class="nums-display text-2xl font-light text-ink">{{ counts.cleaning }}</span> being cleaned</span>
+  <span><span class="nums-display text-2xl font-light text-ink">{{ counts.waiting }}</span> waiting for a bed</span>
+</p>
+
+<div class="space-y-4">
+  {% for w in wards %}
+  <section class="card" aria-labelledby="ward-{{ w.ward.pk }}">
+    <div class="flex flex-wrap items-baseline justify-between gap-3">
+      <h2 id="ward-{{ w.ward.pk }}" class="card__title">{{ w.ward.name }}</h2>
+      <p class="text-sm text-ink-soft">{{ w.ward.get_ward_type_display }} · <span class="font-medium text-ink">{{ w.free }} free</span> of {{ w.beds|length }}{% if w.waiting %} · <span class="font-medium text-warn">{{ w.waiting }} waiting</span>{% endif %}</p>
+    </div>
+    <ul class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+      {% for bed in w.beds %}
+      <li class="bed bed--{{ bed.status|lower }}">
+        <div class="flex items-center justify-between gap-2">
+          <span class="bed__no">Bed {{ bed.number }}</span>
+        </div>
+        {% include "partials/badge.html" with status=bed.status %}
+        {% if bed.admission %}
+          <p class="truncate text-sm font-medium" title="{{ bed.admission.patient.name }}">{{ bed.admission.patient.name }}</p>
+          <p class="text-xs text-ink-soft">since {{ bed.admission.admitted_at|date:"d M, H:i" }}</p>
+        {% elif bed.status == "CLEANING" %}
+          <form method="post" action="{% url 'wards:mark_clean' bed.pk %}" class="mt-auto">{% csrf_token %}<button class="btn btn--sm w-full">Mark clean</button></form>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% empty %}
+  <section class="card py-14 text-center">
+    <div class="ghost" aria-hidden="true"><span></span><span></span><span></span></div>
+    <p class="font-serif text-2xl">No wards set up</p>
+    <p class="mt-2 text-sm text-ink-soft">Add wards and beds in Django Admin or run seed_demo.</p>
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

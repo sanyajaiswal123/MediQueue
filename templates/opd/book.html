@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Book a token · MediQueue{% endblock %}
+{% block body_class %}patient-bg{% endblock %}
+
+{% block body %}
+{% include "partials/topnav.html" %}
+<main id="main" class="mx-auto max-w-[680px] px-4 pb-6 pt-10">
+  <h1 class="font-serif text-[clamp(2.4rem,7vw,3.2rem)] leading-[1.02] text-ink">Where are you going?</h1>
+  <p class="mt-2 text-ink-soft">Pick a hospital and a department. Your token prints straight after.</p>
+
+  {% for t in active_tokens %}
+  <a href="{% url 'opd:track' t.pk %}" class="mt-6 flex items-center gap-3 rounded-2xl bg-live-tint px-4 py-3 text-[var(--live-text)] [&>svg]:size-5 [&>svg]:flex-none">
+    {% include "partials/icon.html" with name="clock" %}
+    <span class="flex-1 text-sm">You already have <span class="font-semibold">{{ t.label }}</span> in {{ t.department.name }} today.</span>
+    <span class="text-sm font-semibold">Track it</span>
+  </a>
+  {% endfor %}
+
+  <section class="mt-8" aria-labelledby="hosp-label">
+    <h2 id="hosp-label" class="text-sm font-medium text-ink-soft">Hospital</h2>
+    <div class="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0" data-slider="pill">
+      {% for h in hospitals %}
+      <a href="?hospital={{ h.pk }}" class="hosp flex-none" data-swap="#book-region" {% if h == hospital %}aria-current="true"{% endif %}>
+        <span class="hosp__label"><span class="font-medium">{{ h.name }}</span><small>{{ h.area }}</small></span>
+      </a>
+      {% endfor %}
+    </div>
+    <p class="mt-1 text-xs text-ink-soft">We'll remember your hospital on this device.</p>
+  </section>
+
+  <div id="book-region" class="swap-region">
+  <form method="post" action="?hospital={{ hospital.pk }}" novalidate class="mt-8" data-book-form>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="toast toast--error mb-4" role="alert">{% include "partials/icon.html" with name="alert" %}<span>{{ form.non_field_errors.0 }}</span></div>{% endif %}
+
+    <fieldset>
+      <legend class="text-sm font-medium text-ink-soft">Department</legend>
+      {% for e in form.department.errors %}<p class="field__error">{{ e }}</p>{% endfor %}
+      <div class="mt-3 grid gap-3 sm:grid-cols-2">
+        {% for d in departments %}
+        <label class="dept">
+          <input type="radio" name="department" value="{{ d.dept.pk }}" data-name="{{ d.dept.name }}" {% if d.selected %}checked{% endif %} {% if not d.bookable %}disabled{% endif %}>
+          <span class="dept__body">
+            <span class="dept__code">{{ d.dept.code }}</span>
+            <span class="text-[17px] font-medium leading-tight text-ink">{{ d.dept.name }}</span>
+            {% if not d.dept.is_open %}
+              <span class="dept__wait"><small>Closed today</small></span>
+              <span class="text-sm text-ink-soft">Not taking tokens</span>
+            {% elif not d.load.tokens_left %}
+              <span class="dept__wait"><small>Fully booked</small></span>
+              <span class="text-sm text-ink-soft">No tokens left today</span>
+            {% else %}
+              <span class="dept__wait">~{{ d.load.estimated_wait_minutes }}<small>min wait</small></span>
+              <span class="text-sm text-ink-soft">
+                {{ d.load.tokens_left }} token{{ d.load.tokens_left|pluralize }} left
+                <span class="minis" aria-hidden="true">{% for i in "0123456789" %}<i{% if forloop.counter <= d.fill %} class="on"{% endif %}></i>{% endfor %}</span>
+              </span>
+            {% endif %}
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    {% if needs_profile %}
+    <div class="pcard mt-8">
+      <h2 class="font-serif text-2xl">About you</h2>
+      <p class="mt-1 text-sm text-ink-soft">Asked once, for the hospital record.</p>
+      <div class="mt-5 grid grid-cols-2 gap-3">
+        {% include "partials/field.html" with field=form.age %}
+        {% include "partials/field.html" with field=form.gender %}
+      </div>
+    </div>
+    {% endif %}
+
+    <p class="mt-6 text-sm text-ink-soft">Emergency, elderly or pregnant? Reception can issue a priority token.</p>
+
+    <div class="bookbar">
+      <button type="submit" class="btn-primary w-full" style="height:56px;font-size:17px;border-radius:999px" data-book-label>Book my token</button>
+      <p class="mt-3 text-center text-xs text-ink-soft">One active token per department per day. You can cancel while you're still waiting.</p>
+    </div>
+  </form>
+  </div>
+</main>
+{% endblock %}

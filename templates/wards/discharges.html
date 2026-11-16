@@ -1,0 +1,56 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Discharge and cleaning · MediQueue{% endblock %}
+{% block heading %}Discharge and cleaning{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 items-start gap-4 *:min-w-0 xl:grid-cols-[1fr_380px]">
+  <section class="card" aria-labelledby="adm-title">
+    <h2 id="adm-title" class="card__title">Admitted patients</h2>
+    <p class="card__sub">Discharging frees the bed for cleaning. It is not reassigned until it is marked clean.</p>
+    {% if admitted %}
+    <div class="mt-6 overflow-x-auto">
+      <table class="table">
+        <thead><tr><th>Patient</th><th>Ward / bed</th><th>Doctor</th><th>Admitted</th><th><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody>
+        {% for a in admitted %}
+          <tr>
+            <td><span class="font-medium">{{ a.patient.name }}</span> <span class="text-ink-soft">· {{ a.patient.age }}{{ a.patient.gender }}</span></td>
+            <td>{{ a.ward.name }} · <span class="font-medium">Bed {{ a.bed.number }}</span></td>
+            <td class="text-ink-soft">{{ a.doctor|default:"" }}</td>
+            <td class="text-ink-soft">{{ a.admitted_at|date:"d M, H:i" }}</td>
+            <td class="text-right"><form method="post" action="{% url 'wards:discharge' a.pk %}">{% csrf_token %}<button class="btn btn--sm btn--dark">{% include "partials/icon.html" with name="discharge" %}Discharge</button></form></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="py-12 text-center">
+      <div class="ghost" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p class="font-serif text-2xl">No one is admitted</p>
+      <p class="mt-2 text-sm text-ink-soft">Admitted patients appear here, ready for discharge.</p>
+      <a class="btn btn--dark mt-6" href="{% url 'wards:admissions' %}">Admit a patient</a>
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="card" aria-labelledby="clean-title">
+    <h2 id="clean-title" class="card__title">Beds to clean</h2>
+    <p class="card__sub">Marking a bed clean gives it to the next patient on that ward's waiting list.</p>
+    {% if cleaning %}
+    <ul class="mt-5 divide-y divide-line/60">
+      {% for bed in cleaning %}
+      <li class="flex items-center gap-3 py-3">
+        {% include "partials/badge.html" with status=bed.status %}
+        <span class="flex-1"><span class="font-medium">Bed {{ bed.number }}</span> <span class="text-sm text-ink-soft">· {{ bed.ward.name }}</span></span>
+        <form method="post" action="{% url 'wards:mark_clean' bed.pk %}">{% csrf_token %}<button class="btn btn--sm">{% include "partials/icon.html" with name="check" %}Mark clean</button></form>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="mt-6 text-sm text-ink-soft">Every bed is clean.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

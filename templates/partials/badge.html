@@ -1,0 +1,18 @@
+{% comment %}Status badge: tone + glyph + text, never colour alone.
+Usage: {% include "partials/badge.html" with status=token.status %} for Token/Bed/Admission statuses,
+or {% include "partials/badge.html" with tone="warn" icon="alert" text="Low stock" %}.{% endcomment %}
+{% if status %}
+{% if status == "WAITING" %}{% include "partials/badge.html" with status="" tone="warn" icon="clock" text=label|default:"Waiting" %}
+{% elif status == "CALLED" %}{% include "partials/badge.html" with status="" tone="live" icon="megaphone" text="Called" %}
+{% elif status == "IN_CONSULT" %}{% include "partials/badge.html" with status="" tone="live" icon="consult" text="In consultation" %}
+{% elif status == "COMPLETED" %}{% include "partials/badge.html" with status="" tone="ok" icon="check-circle" text="Completed" %}
+{% elif status == "NO_SHOW" %}{% include "partials/badge.html" with status="" tone="muted" icon="minus-circle" text="No show" %}
+{% elif status == "CANCELLED" %}{% include "partials/badge.html" with status="" tone="muted" icon="x-circle" text="Cancelled" %}
+{% elif status == "AVAILABLE" %}{% include "partials/badge.html" with status="" tone="ok" icon="check-circle" text="Available" %}
+{% elif status == "OCCUPIED" %}{% include "partials/badge.html" with status="" tone="ink" icon="user" text="Occupied" %}
+{% elif status == "CLEANING" %}{% include "partials/badge.html" with status="" tone="warn" icon="sparkles" text="Cleaning" %}
+{% elif status == "ADMITTED" %}{% include "partials/badge.html" with status="" tone="ok" icon="bed" text="Admitted" %}
+{% elif status == "PENDING" %}{% include "partials/badge.html" with status="" tone="warn" icon="clock" text="Pending" %}
+{% elif status == "DISPENSED" %}{% include "partials/badge.html" with status="" tone="ok" icon="check-circle" text="Dispensed" %}
+{% endif %}
+{% else %}<span class="badge{% if tone and tone != 'muted' %} badge--{{ tone }}{% endif %}">{% include "partials/icon.html" with name=icon %}{{ text }}</span>{% endif %}

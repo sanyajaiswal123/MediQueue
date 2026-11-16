@@ -1,0 +1,60 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Admissions · MediQueue{% endblock %}
+{% block heading %}Admissions{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 items-start gap-4 *:min-w-0 lg:grid-cols-[380px_1fr]">
+  <section class="card lg:sticky lg:top-6" aria-labelledby="admit-title">
+    <h2 id="admit-title" class="card__title">Request a bed</h2>
+    <p class="card__sub">A free bed is assigned at once. If the ward is full, the patient joins its waiting list.</p>
+    <form method="post" novalidate class="mt-6 space-y-4">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="toast toast--error" role="alert">{% include "partials/icon.html" with name="alert" %}<span>{{ form.non_field_errors.0 }}</span></div>{% endif %}
+      <div class="field--sm">{% include "partials/field.html" with field=form.name %}</div>
+      <div class="field--sm">{% include "partials/field.html" with field=form.phone %}</div>
+      <div class="grid grid-cols-2 gap-3 field--sm">
+        {% include "partials/field.html" with field=form.age %}
+        {% include "partials/field.html" with field=form.gender %}
+      </div>
+      <div class="field--sm">{% include "partials/field.html" with field=form.ward %}</div>
+      <div class="field--sm">{% include "partials/field.html" with field=form.doctor %}</div>
+      <label class="check">{{ form.priority }}<span>{{ form.priority.label }}</span></label>
+      <button type="submit" class="btn btn--brand w-full" style="height:48px">{% include "partials/icon.html" with name="bed" %}Admit or add to waiting list</button>
+    </form>
+  </section>
+
+  <section class="card" aria-labelledby="wl-title">
+    <div class="flex items-baseline justify-between gap-4">
+      <h2 id="wl-title" class="card__title">Waiting for a bed</h2>
+      <p class="text-sm text-ink-soft">{{ waiting_total }} in total · emergencies first, then oldest request</p>
+    </div>
+    {% for q in queues %}
+    <div class="mt-8 first-of-type:mt-6">
+      <div class="mb-2 flex items-baseline justify-between gap-3 border-b border-line pb-2">
+        <h3 class="font-medium">{{ q.ward.name }}</h3>
+        <span class="text-sm text-ink-soft">{{ q.free }} bed{{ q.free|pluralize }} free</span>
+      </div>
+      {% if q.items %}
+      <table class="table">
+        <thead class="sr-only"><tr><th>Order</th><th>Patient</th><th>Requested</th><th>Doctor</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for a in q.items %}
+          <tr>
+            <td class="w-8 tabular text-ink-soft">{{ forloop.counter }}</td>
+            <td><span class="font-medium">{{ a.patient.name }}</span> <span class="text-ink-soft">· {{ a.patient.age }}{{ a.patient.gender }}</span>{% if a.priority %} {% include "partials/badge.html" with tone="bad" icon="alert" text="Emergency" %}{% endif %}</td>
+            <td class="text-ink-soft">{{ a.requested_at|timesince }} ago</td>
+            <td class="text-ink-soft">{{ a.doctor|default:"" }}</td>
+            <td class="text-right"><form method="post" action="{% url 'wards:cancel_waiting' a.pk %}">{% csrf_token %}<button class="btn btn--sm btn--danger-ghost">Withdraw</button></form></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="py-2 text-sm text-ink-soft">Nobody waiting.</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

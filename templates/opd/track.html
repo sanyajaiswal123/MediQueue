@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ token.label }} · Your token · MediQueue{% endblock %}
+{% block body_class %}patient-bg{% endblock %}
+{% block head %}<noscript><meta http-equiv="refresh" content="30"></noscript>{% endblock %}
+
+{% block body %}
+{% include "partials/topnav.html" %}
+<main id="main" class="mx-auto max-w-[960px] px-4 pb-20 pt-8">
+  <div id="tracker"
+       data-api="{% url 'api:token-detail' token.pk %}"
+       data-cancel="{% url 'api:token-cancel' token.pk %}"
+       data-book="{% url 'opd:book' %}">
+    {# Server-rendered fallback; the React widget replaces it. #}
+    <h1 class="font-serif text-[clamp(2rem,6vw,2.6rem)] leading-[1.05]">
+      {% if token.status == "WAITING" %}{% if people_ahead == 0 %}You're next.{% else %}{{ people_ahead }} ahead of you.{% endif %}
+      {% elif token.status == "CALLED" %}It's your turn.
+      {% else %}{{ token.get_status_display }}.{% endif %}
+    </h1>
+    <div class="pass-wrap mt-8">
+      <section class="ticket pass" aria-label="Token {{ token.label }}">
+        <div class="pass__caps"><span>MediQueue · OPD token</span><span>{{ token.date|date:"j M" }}</span></div>
+        <div class="pass__route">
+          <span class="pass__code">{{ token.department.code }}</span>
+          <span class="pass__line"></span>
+          <span class="pass__code">{{ token.doctor.room|default:"TBA" }}</span>
+        </div>
+        <div class="pass__names"><span>{{ token.department.name }}</span><span class="text-right">{{ token.department.hospital.name }}</span></div>
+        <p class="pass__label tabular">{{ token.label }}</p>
+        {% if token.status == "CALLED" %}<p class="pass__go">Go to Room {{ token.doctor.room|default:"-" }}</p>{% endif %}
+        <div class="ticket__perf" aria-hidden="true"></div>
+        <dl class="pass__stub">
+          <div><dt>Status</dt><dd><small>{{ token.get_status_display }}</small></dd></div>
+          <div><dt>Ahead</dt><dd>{% if token.status == "WAITING" %}{{ people_ahead }}{% else %}—{% endif %}</dd></div>
+          <div><dt>Wait</dt><dd>{% if token.status == "WAITING" %}~{{ wait }}<small> min</small>{% else %}—{% endif %}</dd></div>
+        </dl>
+      </section>
+    </div>
+    <p class="mt-4 text-sm text-ink-soft">This page refreshes every 30 seconds.</p>
+  </div>
+</main>
+{% endblock %}
+
+{% block scripts %}<script type="module" src="{% static 'dist/tracker.js' %}"></script>{% endblock %}

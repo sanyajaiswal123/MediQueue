@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Not allowed · MediQueue{% endblock %}
+{% block body_class %}bg-paper{% endblock %}
+
+{% block body %}
+{% include "partials/topnav.html" %}
+<main id="main" class="mx-auto flex min-h-[80vh] max-w-[960px] flex-col justify-center px-4 py-20 sm:px-8">
+  <h1 class="font-serif text-[clamp(2.4rem,5vw,4.2rem)] leading-[1.02]">{% if exception %}This desk is for {{ exception }}.{% else %}This desk belongs to another role.{% endif %}</h1>
+  <p class="mt-4 max-w-[52ch] font-light text-ink-soft">You're signed in{% if user.is_authenticated %} as {{ user.get_full_name|default:user.username }}{% if user.profile %} ({{ user.profile.get_role_display }}){% endif %}{% endif %}, so this page isn't part of your role. If you think that's wrong, ask your administrator to check your role.</p>
+  <div class="mt-8 flex flex-wrap items-center gap-5">
+    {% if is_staff_user %}<a href="{% url 'staff_home' %}" class="btn-primary">Back to the staff portal</a>
+    {% else %}<a href="{% url 'home' %}" class="btn-primary">Go to the home page</a>{% endif %}
+  </div>
+</main>
+{% endblock %}

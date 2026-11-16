@@ -1,0 +1,74 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Stock and alerts · MediQueue{% endblock %}
+{% block heading %}Stock and alerts{% endblock %}
+
+{% block content %}
+<section class="mb-4 grid gap-4 lg:grid-cols-3" aria-label="Alerts">
+  <div class="card">
+    <h2 class="flex items-center gap-2 font-medium">{% include "partials/badge.html" with tone="warn" icon="alert" text="Low stock" %} <span class="text-sm text-ink-soft">at or below reorder level</span></h2>
+    {% if low %}<ul class="mt-3 space-y-1.5 text-sm">{% for m in low %}<li class="flex justify-between gap-3"><span>{{ m.name }}</span><span class="tabular text-ink-soft"><span class="font-semibold text-ink">{{ m.quantity }}</span> / {{ m.reorder_level }}</span></li>{% endfor %}</ul>
+    {% else %}<p class="mt-3 text-sm text-ink-soft">Nothing is running low.</p>{% endif %}
+  </div>
+  <div class="card">
+    <h2 class="flex items-center gap-2 font-medium">{% include "partials/badge.html" with tone="warn" icon="clock" text="Expiring soon" %} <span class="text-sm text-ink-soft">within 30 days</span></h2>
+    {% if expiring %}<ul class="mt-3 space-y-1.5 text-sm">{% for m in expiring %}<li class="flex justify-between gap-3"><span>{{ m.name }}</span><span class="tabular text-ink-soft">{{ m.expiry_date|date:"d M" }} · {{ m.quantity }}</span></li>{% endfor %}</ul>
+    {% else %}<p class="mt-3 text-sm text-ink-soft">No batch expires this month.</p>{% endif %}
+  </div>
+  <div class="card">
+    <h2 class="flex items-center gap-2 font-medium">{% include "partials/badge.html" with tone="bad" icon="x-circle" text="Expired" %} <span class="text-sm text-ink-soft">still on the shelf</span></h2>
+    {% if expired %}
+    <ul class="mt-3 space-y-1.5 text-sm">{% for m in expired %}<li class="flex justify-between gap-3"><span>{{ m.name }}</span><span class="tabular text-ink-soft">{{ m.quantity }}</span></li>{% endfor %}</ul>
+    <form method="post" action="{% url 'pharmacy:write_off' %}" class="mt-4">{% csrf_token %}<button class="btn btn--sm btn--dark">{% include "partials/icon.html" with name="trash" %}Write off expired stock</button></form>
+    {% else %}<p class="mt-3 text-sm text-ink-soft">No expired stock.</p>{% endif %}
+  </div>
+</section>
+
+<div class="grid grid-cols-1 items-start gap-4 *:min-w-0 xl:grid-cols-[1fr_340px]">
+  <section class="card" aria-labelledby="all-title">
+    <h2 id="all-title" class="card__title">All batches</h2>
+    <div class="mt-5 overflow-x-auto">
+      <table class="table">
+        <thead><tr><th>Medicine</th><th>Category</th><th class="num">Qty</th><th class="num">Reorder at</th><th>Expiry</th><th class="num">Unit ₹</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for m in medicines %}
+          <tr>
+            <td class="font-medium">{{ m.name }}</td>
+            <td class="text-ink-soft">{{ m.category }}</td>
+            <td class="num font-semibold">{{ m.quantity }}</td>
+            <td class="num text-ink-soft">{{ m.reorder_level }}</td>
+            <td class="text-ink-soft">{{ m.expiry_date|date:"d M Y" }}</td>
+            <td class="num text-ink-soft">{{ m.unit_price }}</td>
+            <td>{% if m.state.0 == "ok" %}<span class="text-sm text-ink-soft">In stock</span>{% elif m.state.0 == "expired" %}{% include "partials/badge.html" with tone="bad" icon="x-circle" text=m.state.1 %}{% elif m.state.0 == "low" %}{% include "partials/badge.html" with tone="warn" icon="alert" text=m.state.1 %}{% else %}{% include "partials/badge.html" with tone="warn" icon="clock" text=m.state.1 %}{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="py-8 text-center text-ink-soft">No medicines yet. Add them in Django Admin.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="space-y-4">
+    <section class="card" aria-labelledby="recv-title">
+      <h2 id="recv-title" class="card__title">Receive stock</h2>
+      <form method="post" novalidate class="mt-5 space-y-4">
+        {% csrf_token %}
+        <div class="field--sm">{% include "partials/field.html" with field=form.medicine %}</div>
+        <div class="field--sm">{% include "partials/field.html" with field=form.quantity %}</div>
+        <button class="btn btn--dark w-full" style="height:44px">{% include "partials/icon.html" with name="plus" %}Add to stock</button>
+      </form>
+    </section>
+    <section class="card" aria-labelledby="log-title">
+      <h2 id="log-title" class="card__title">Recent movements</h2>
+      {% if movements %}
+      <ul class="mt-4 space-y-2 text-sm">
+        {% for mv in movements %}
+        <li class="flex justify-between gap-3"><span class="truncate">{{ mv.medicine.name }} <span class="text-ink-soft">· {{ mv.get_reason_display }}</span></span><span class="tabular font-semibold {% if mv.change > 0 %}text-ok{% endif %}">{% if mv.change > 0 %}+{% endif %}{{ mv.change }}</span></li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="mt-4 text-sm text-ink-soft">No stock changes yet.</p>{% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+{% comment %}One labelled form field with its errors. Usage: {% include "partials/field.html" with field=form.username %}{% endcomment %}
+<div class="field">
+  <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+  {{ field }}
+  {% if field.help_text %}<div class="field__help">{{ field.help_text|safe }}</div>{% endif %}
+  {% for error in field.errors %}<p class="field__error" role="alert">{{ error }}</p>{% endfor %}
+</div>

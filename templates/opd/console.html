@@ -1,0 +1,116 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Consultations · MediQueue{% endblock %}
+{% block crumb %}{{ dept.name }} · {{ doctor }} · Room {{ doctor.room|default:"-" }}{% endblock %}
+{% block heading %}Consultations{% endblock %}
+
+{% block content %}
+<p class="mb-6 flex flex-wrap gap-x-8 gap-y-2 text-sm text-ink-soft" aria-label="Today">
+  <span><span class="nums-display text-2xl font-light text-ink">{{ stats.waiting }}</span> waiting</span>
+  <span><span class="nums-display text-2xl font-light text-ink">{{ stats.seen }}</span> seen by you</span>
+  <span><span class="nums-display text-2xl font-light text-ink">{{ stats.no_show }}</span> no-shows</span>
+  <span><span class="nums-display text-2xl font-light text-ink">{{ stats.avg }}</span> min average</span>
+</p>
+
+<div class="grid grid-cols-1 items-start gap-4 *:min-w-0 lg:grid-cols-[1fr_400px]">
+  <section class="card" aria-labelledby="now-title">
+    <h2 id="now-title" class="sr-only">Current patient</h2>
+    {% if not current %}
+    <div class="flex flex-col items-center justify-center py-10 text-center">
+      {% if waiting %}
+      <p class="text-sm text-ink-soft">Next in line</p>
+      <p class="mt-1 font-display text-[88px] leading-none tracking-tight text-ink">{{ waiting.0.label }}</p>
+      <p class="mt-2 text-ink-soft">{{ waiting.0.patient.name }}{% if waiting.0.is_priority %} · <span class="font-semibold text-brand-dark">priority</span>{% endif %}</p>
+      {% else %}
+      <div class="ghost" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p class="font-serif text-3xl">Nobody waiting</p>
+      <p class="mt-2 text-sm text-ink-soft">New tokens from reception show up on the right.</p>
+      {% endif %}
+      <form method="post" class="mt-8">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="call_next">
+        <button class="btn btn--brand btn--xl" {% if not waiting %}disabled{% endif %}>{% include "partials/icon.html" with name="megaphone" %}Call next patient</button>
+      </form>
+    </div>
+
+    {% else %}
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p class="font-display text-[72px] leading-none tracking-tight">{{ current.label }}</p>
+        <p class="mt-3 text-xl text-ink">{{ current.patient.name }}</p>
+        <p class="text-sm text-ink-soft">{{ current.patient.age }} years · {{ current.patient.get_gender_display }} · {{ current.patient.phone }}</p>
+      </div>
+      <div class="text-right">
+        {% include "partials/badge.html" with status=current.status %}
+        {% if current.status == "CALLED" %}<p class="mt-2 text-sm text-ink-soft">Call {{ current.call_count }} of {{ max_calls }}</p>{% endif %}
+        {% if current.is_priority %}<p class="mt-2">{% include "partials/badge.html" with tone="brand" icon="flag" text="Priority" %}</p>{% endif %}
+      </div>
+    </div>
+
+    {% if current.status == "CALLED" %}
+    <div class="mt-10 flex flex-wrap items-center gap-3 border-t border-line pt-6">
+      <form method="post" action="{% url 'opd:token_action' current.pk 'start' %}">{% csrf_token %}<button class="btn btn--brand" style="height:48px">{% include "partials/icon.html" with name="play" %}Patient is here, start</button></form>
+      <form method="post" action="{% url 'opd:token_action' current.pk 'recall' %}">{% csrf_token %}<button class="btn" style="height:48px">{% include "partials/icon.html" with name="megaphone" %}{% if current.call_count >= max_calls %}Mark no-show{% else %}Call again{% endif %}</button></form>
+      <form method="post" action="{% url 'opd:token_action' current.pk 'no_show' %}" class="ml-auto">{% csrf_token %}<button class="btn btn--ghost">Did not come</button></form>
+    </div>
+    <p class="mt-4 text-sm text-ink-soft">After {{ max_calls }} calls with no answer the token is marked as a no-show.</p>
+
+    {% else %}
+    <form method="post" class="mt-8 border-t border-line pt-6" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="action" value="complete">
+      {{ formset.management_form }}
+      <div class="flex items-end justify-between gap-4">
+        <div>
+          <h3 class="font-serif text-2xl">Prescription</h3>
+          <p class="text-sm text-ink-soft">Optional. Leave rows empty if no medicine is needed. Only in-date stock is listed.</p>
+        </div>
+      </div>
+      {% if formset.non_form_errors %}<p class="field__error">{{ formset.non_form_errors.0 }}</p>{% endif %}
+      <div class="mt-4 space-y-2">
+        {% for f in formset %}
+        <div class="grid grid-cols-[1fr_120px] gap-2 field field--sm">
+          <div>
+            <label for="{{ f.medicine.id_for_label }}" class="sr-only">Medicine {{ forloop.counter }}</label>
+            {{ f.medicine }}
+            {% for e in f.medicine.errors %}<p class="field__error">{{ e }}</p>{% endfor %}
+          </div>
+          <div>
+            <label for="{{ f.quantity.id_for_label }}" class="sr-only">Quantity {{ forloop.counter }}</label>
+            <input type="number" name="{{ f.quantity.html_name }}" id="{{ f.quantity.id_for_label }}" value="{{ f.quantity.value|default_if_none:'' }}" min="1" max="500" placeholder="Qty">
+            {% for e in f.quantity.errors %}<p class="field__error">{{ e }}</p>{% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="mt-8 flex flex-wrap items-center gap-3">
+        <button class="btn btn--brand" style="height:48px">{% include "partials/icon.html" with name="check" %}Complete consultation</button>
+        <a class="btn btn--ghost" href="{% url 'wards:admissions' %}?patient={{ current.patient.pk }}">{% include "partials/icon.html" with name="admit" %}Request admission</a>
+      </div>
+    </form>
+    {% endif %}
+    {% endif %}
+  </section>
+
+  <section class="card" aria-labelledby="line-title">
+    <h2 id="line-title" class="card__title">Waiting line</h2>
+    <p class="card__sub">Priority first, then by token number</p>
+    {% if waiting %}
+    <ol class="mt-5 divide-y divide-line/60">
+      {% for t in waiting %}
+      <li class="flex items-center gap-4 py-3">
+        <span class="w-5 text-right text-sm tabular text-ink-soft">{{ t.position }}</span>
+        <div class="min-w-0 flex-1">
+          <p><span class="token-label">{{ t.label }}</span>{% if t.is_priority %} <span class="ml-1 text-xs font-semibold uppercase tracking-wide text-brand-dark">Priority</span>{% endif %}</p>
+          <p class="truncate text-sm text-ink-soft">{{ t.patient.name }}, {{ t.patient.age }}</p>
+        </div>
+        <span class="text-sm tabular text-ink-soft">~{{ t.wait }} min</span>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <p class="mt-6 text-sm text-ink-soft">The line is empty.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

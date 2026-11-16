@@ -1,0 +1,20 @@
+{% extends "auth/base_auth.html" %}
+
+{% block title %}Sign in · MediQueue{% endblock %}
+{% block heading %}Sign in{% endblock %}
+{% block lede %}Patients see their token. Staff reach their desk.{% endblock %}
+
+{% block form %}
+<form method="post" novalidate class="space-y-5">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <p class="field__error" role="alert">{{ form.non_field_errors.0 }}</p>
+  {% endif %}
+  {% include "partials/field.html" with field=form.username %}
+  {% include "partials/field.html" with field=form.password %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <button type="submit" class="btn-primary w-full" style="border-radius:999px;height:52px">Sign in</button>
+</form>
+{% endblock %}
+
+{% block alt %}New patient? <a class="link" href="{% url 'accounts:register' %}">Create an account</a>{% endblock %}
