@@ -15,6 +15,10 @@
 ![GSAP](https://img.shields.io/badge/GSAP-motion-88CE02?logo=greensock&logoColor=black)
 ![Tests](https://img.shields.io/badge/tests-100_passing-2f7d4f)
 
+### [Live demo → mediqueue-53ry.onrender.com](https://mediqueue-53ry.onrender.com)
+
+<sub>Free hosting sleeps when idle, so the first load can take about 30 seconds. Demo logins are listed [below](#demo-logins).</sub>
+
 </div>
 
 ---
@@ -122,7 +126,7 @@ python manage.py seed_demo --activity
 python manage.py runserver
 ```
 
-Open <http://127.0.0.1:8000>. The built frontend is committed in `static/dist/`, so Node is only needed if you change `frontend/`:
+Open <http://127.0.0.1:8000> (or try the [live demo](https://mediqueue-53ry.onrender.com)). The built frontend is committed in `static/dist/`, so Node is only needed if you change `frontend/`:
 
 ```bash
 cd frontend && npm install && npm run build
